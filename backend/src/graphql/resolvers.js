@@ -1,27 +1,58 @@
-import { releases } from "../data/releases.js";
+import { RELEASE_STEPS } from "../constants/releaseSteps.js";
+import { calculateReleaseStatus } from "../utils/releaseStatus.js";
+
+import {
+  getReleases,
+  getReleaseById,
+  createRelease,
+  setStepCompletion,
+  updateReleaseAdditionalInfo,
+  deleteRelease,
+} from "../services/releaseService.js";
 
 export const resolvers = {
   Query: {
-    releases: () => releases,
+    releases: () => getReleases(),
 
-    release: (_, args) => {
-      return releases.find((release) => release.id === args.id) ?? null;
+    release: (_, { id }) => getReleaseById(id),
+  },
+
+  Release: {
+    status: (release) => {
+      return calculateReleaseStatus(release.completedStepIds);
+    },
+
+    steps: (release) => {
+      return RELEASE_STEPS.map((step) => ({
+        ...step,
+        completed: release.completedStepIds.includes(step.id),
+      }));
+    },
+
+    completedStepsCount: (release) => {
+      return release.completedStepIds.length;
+    },
+
+    totalSteps: () => {
+      return RELEASE_STEPS.length;
     },
   },
 
   Mutation: {
-    createRelease: (_, args) => {
-      const newRelease = {
-        id: String(releases.length + 1),
-        name: args.name,
-        date: args.date,
-        additionalInfo: args.additionalInfo ?? null,
-        status: "PLANNED",
-      };
+    createRelease: (_, { input }) => {
+      return createRelease(input);
+    },
 
-      releases.push(newRelease);
+    setStepCompletion: (_, { input }) => {
+      return setStepCompletion(input);
+    },
 
-      return newRelease;
+    updateReleaseAdditionalInfo: (_, { input }) => {
+      return updateReleaseAdditionalInfo(input);
+    },
+
+    deleteRelease: (_, { id }) => {
+      return deleteRelease(id);
     },
   },
 };
