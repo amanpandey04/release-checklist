@@ -1,57 +1,10 @@
-import { Link } from "react-router";
-import Checklist from "../components/Checklist";
+import { useState } from "react";
+import { useMutation, useQuery } from "@apollo/client/react";
+import { Link, useNavigate, useParams } from "react-router";
 
-const sampleRelease = {
-  id: "1",
-  name: "Version 2.4.0",
-  date: "October 10, 2026",
-  status: "ONGOING",
-  completedStepsCount: 4,
-  totalSteps: 8,
-  additionalInfo: "Major frontend update. Waiting for final QA approval.",
-  steps: [
-    {
-      id: "changes-reviewed",
-      label: "Review all merged changes",
-      completed: true,
-    },
-    {
-      id: "changelog-updated",
-      label: "Update CHANGELOG",
-      completed: true,
-    },
-    {
-      id: "migrations-verified",
-      label: "Verify database migrations",
-      completed: false,
-    },
-    {
-      id: "tests-passed",
-      label: "Run automated tests",
-      completed: true,
-    },
-    {
-      id: "release-notes-ready",
-      label: "Prepare release notes",
-      completed: false,
-    },
-    {
-      id: "staging-deployed",
-      label: "Deploy to staging",
-      completed: true,
-    },
-    {
-      id: "qa-completed",
-      label: "Complete QA verification",
-      completed: false,
-    },
-    {
-      id: "production-deployed",
-      label: "Deploy to production",
-      completed: false,
-    },
-  ],
-};
+import Checklist from "../components/Checklist";
+import { DELETE_RELEASE, UPDATE_RELEASE_ADDITIONAL_INFO } from "../graphql/mutations";
+import { GET_RELEASE } from "../graphql/queries";
 
 const statusStyles = {
   PLANNED: "badge-ghost",
@@ -60,7 +13,114 @@ const statusStyles = {
 };
 
 export default function ReleaseDetailsPage() {
-  const progress = Math.round((sampleRelease.completedStepsCount / sampleRelease.totalSteps) * 100);
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  const {
+    data,
+    loading: releaseLoading,
+    error: releaseError,
+    refetch,
+  } = useQuery(GET_RELEASE, {
+    variables: { id },
+  });
+
+  const [saveMessage, setSaveMessage] = useState("");
+  const [saveError, setSaveError] = useState("");
+
+  const [updateAdditionalInfo, { loading: savingInfo }] = useMutation(
+    UPDATE_RELEASE_ADDITIONAL_INFO,
+  );
+
+  const [deleteRelease, { loading: deleting }] = useMutation(DELETE_RELEASE, {
+    onCompleted: () => {
+      navigate("/");
+    },
+  });
+
+  if (releaseLoading) {
+    return (
+      <section className="flex min-h-60 items-center justify-center">
+        <span className="loading loading-spinner loading-lg" />
+      </section>
+    );
+  }
+
+  if (releaseError) {
+    return (
+      <section className="rounded-lg border border-error/30 bg-error/10 p-6">
+        <h1 className="text-xl font-semibold text-error">Failed to load release</h1>
+
+        <p className="mt-2 text-sm text-base-content/70">{releaseError.message}</p>
+      </section>
+    );
+  }
+
+  if (!data?.release) {
+    return (
+      <section className="space-y-4 text-center">
+        <h1 className="text-2xl font-bold">Release not found</h1>
+
+        <Link to="/" className="btn btn-primary">
+          Back to Releases
+        </Link>
+      </section>
+    );
+  }
+
+  const release = data.release;
+
+  const progress =
+    release.totalSteps === 0
+      ? 0
+      : Math.round((release.completedStepsCount / release.totalSteps) * 100);
+
+  async function handleSaveAdditionalInfo(event) {
+    event.preventDefault();
+
+    setSaveMessage("");
+    setSaveError("");
+
+    const formData = new FormData(event.currentTarget);
+    const additionalInfo = String(formData.get("additionalInfo") ?? "");
+
+    try {
+      await updateAdditionalInfo({
+        variables: {
+          input: {
+            releaseId: release.id,
+            additionalInfo,
+          },
+        },
+      });
+
+      setSaveMessage("Information saved.");
+    } catch (error) {
+      setSaveError(error.message);
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(`Delete "${release.name}"? This cannot be undone.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteRelease({
+        variables: {
+          id: release.id,
+        },
+      });
+    } catch (error) {
+      window.alert(`Failed to delete release: ${error.message}`);
+    }
+  }
+
+  async function handleChecklistUpdated() {
+    await refetch();
+  }
 
   return (
     <section className="space-y-6">
@@ -75,13 +135,15 @@ export default function ReleaseDetailsPage() {
         <div className="card-body gap-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{sampleRelease.name}</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{release.name}</h1>
 
-              <p className="mt-1 text-base-content/60">Due {sampleRelease.date}</p>
+              <p className="mt-1 text-base-content/60">
+                Due {new Date(release.date).toLocaleString()}
+              </p>
             </div>
 
-            <span className={`badge badge-lg ${statusStyles[sampleRelease.status]}`}>
-              {sampleRelease.status}
+            <span className={`badge badge-lg ${statusStyles[release.status]}`}>
+              {release.status}
             </span>
           </div>
 
@@ -90,7 +152,7 @@ export default function ReleaseDetailsPage() {
               <span className="font-medium">Progress</span>
 
               <span className="text-sm text-base-content/70">
-                {sampleRelease.completedStepsCount}/{sampleRelease.totalSteps} completed
+                {release.completedStepsCount}/{release.totalSteps} completed
               </span>
             </div>
 
@@ -108,27 +170,66 @@ export default function ReleaseDetailsPage() {
           </p>
         </div>
 
-        <Checklist steps={sampleRelease.steps} />
+        <Checklist
+          releaseId={release.id}
+          steps={release.steps}
+          onUpdated={handleChecklistUpdated}
+        />
       </div>
 
-      <div className="card border border-base-300 bg-base-100 shadow-sm">
+      <form
+        key={release.id}
+        onSubmit={handleSaveAdditionalInfo}
+        className="card border border-base-300 bg-base-100 shadow-sm"
+      >
         <div className="card-body">
           <h2 className="card-title">Additional Information</h2>
 
           <textarea
+            name="additionalInfo"
             className="textarea textarea-bordered mt-2 min-h-32 w-full"
-            defaultValue={sampleRelease.additionalInfo}
+            defaultValue={release.additionalInfo ?? ""}
             placeholder="Add notes about this release..."
           />
 
+          {saveMessage && (
+            <div className="alert alert-success mt-3">
+              <span>{saveMessage}</span>
+            </div>
+          )}
+
+          {saveError && (
+            <div className="alert alert-error mt-3">
+              <span>{saveError}</span>
+            </div>
+          )}
+
           <div className="card-actions justify-end">
-            <button className="btn btn-primary">Save Information</button>
+            <button type="submit" className="btn btn-primary" disabled={savingInfo}>
+              {savingInfo ? (
+                <>
+                  <span className="loading loading-spinner loading-sm" />
+                  Saving...
+                </>
+              ) : (
+                "Save Information"
+              )}
+            </button>
           </div>
         </div>
-      </div>
+      </form>
 
       <div className="flex justify-end">
-        <button className="btn btn-error btn-outline">Delete Release</button>
+        <button className="btn btn-error btn-outline" onClick={handleDelete} disabled={deleting}>
+          {deleting ? (
+            <>
+              <span className="loading loading-spinner loading-sm" />
+              Deleting...
+            </>
+          ) : (
+            "Delete Release"
+          )}
+        </button>
       </div>
     </section>
   );
