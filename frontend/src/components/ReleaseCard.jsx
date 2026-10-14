@@ -1,4 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router";
+import { useMutation } from "@apollo/client/react";
+
+import { DELETE_RELEASE } from "../graphql/mutations";
+import { removeReleaseFromList } from "../graphql/cacheUpdates";
+
 import { formatReleaseDate } from "../utils/formatReleaseDate";
 
 const statusStyles = {
@@ -8,13 +14,41 @@ const statusStyles = {
 };
 
 export default function ReleaseCard({ release }) {
+  const [deleteError, setDeleteError] = useState("");
+
+  const [deleteRelease, { loading: deleting }] = useMutation(DELETE_RELEASE, {
+    update(cache, { data, variables }) {
+      if (data?.deleteRelease) {
+        removeReleaseFromList(cache, variables.id);
+      }
+    },
+  });
+
+  async function handleDelete() {
+    const confirmed = window.confirm(`Delete "${release.name}"? This cannot be undone.`);
+
+    if (!confirmed) return;
+
+    setDeleteError("");
+
+    try {
+      await deleteRelease({
+        variables: {
+          id: release.id,
+        },
+      });
+    } catch (error) {
+      setDeleteError(error.message);
+    }
+  }
+
   const progress =
     release.totalSteps === 0
       ? 0
       : Math.round((release.completedStepsCount / release.totalSteps) * 100);
 
   return (
-    <article className="card border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="card border border-base-300 bg-base-100 shadow-sm transition duration-200 hover:border-primary/30 hover:shadow-md">
       <div className="card-body gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -38,7 +72,18 @@ export default function ReleaseCard({ release }) {
           <progress className="progress progress-primary w-full" value={progress} max="100" />
         </div>
 
+        {deleteError && <p className="text-sm text-error">{deleteError}</p>}
+
         <div className="card-actions justify-end">
+          <button
+            type="button"
+            className="btn btn-error btn-outline btn-sm"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+
           <Link to={`/releases/${release.id}`} className="btn btn-outline btn-sm">
             View Release
           </Link>

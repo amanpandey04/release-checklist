@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { Link, useNavigate } from "react-router";
 
+import { addReleaseToList } from "../graphql/cacheUpdates";
+
 import { CREATE_RELEASE } from "../graphql/mutations";
 
 export default function CreateReleasePage() {
@@ -13,6 +15,11 @@ export default function CreateReleasePage() {
   const [formError, setFormError] = useState("");
 
   const [createRelease, { loading }] = useMutation(CREATE_RELEASE, {
+    update(cache, { data }) {
+      if (data?.createRelease) {
+        addReleaseToList(cache, data.createRelease);
+      }
+    },
     onCompleted: (data) => {
       navigate(`/releases/${data.createRelease.id}`);
     },
@@ -53,7 +60,7 @@ export default function CreateReleasePage() {
       <form onSubmit={handleSubmit} className="card border border-base-300 bg-base-100 shadow-sm">
         <div className="card-body gap-5">
           <label className="form-control w-full">
-            <span className="mb-2 font-medium">Release name</span>
+            <span className="mb-2 font-medium">Release Name:</span>
 
             <input
               type="text"
@@ -66,7 +73,7 @@ export default function CreateReleasePage() {
           </label>
 
           <label className="form-control w-full">
-            <span className="mb-2 font-medium">Date</span>
+            <span className="mb-2 font-medium">Date:</span>
 
             <input
               type="datetime-local"
@@ -78,7 +85,7 @@ export default function CreateReleasePage() {
           </label>
 
           <label className="form-control w-full">
-            <span className="mb-2 font-medium">Additional information</span>
+            <span className="mb-2 font-medium">Additional Information:</span>
 
             <textarea
               className="textarea textarea-bordered min-h-36 w-full"

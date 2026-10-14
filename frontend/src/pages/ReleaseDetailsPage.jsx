@@ -5,6 +5,7 @@ import Checklist from "../components/Checklist";
 import AdditionalInfoForm from "../components/AdditionalInfoForm";
 import { formatReleaseDate } from "../utils/formatReleaseDate";
 
+import { removeReleaseFromList } from "../graphql/cacheUpdates";
 import { DELETE_RELEASE } from "../graphql/mutations";
 import { GET_RELEASE } from "../graphql/queries";
 
@@ -27,8 +28,10 @@ export default function ReleaseDetailsPage() {
   });
 
   const [deleteRelease, { loading: deleting }] = useMutation(DELETE_RELEASE, {
-    onCompleted: () => {
-      navigate("/");
+    update(cache, { data, variables }) {
+      if (data?.deleteRelease) {
+        removeReleaseFromList(cache, variables.id);
+      }
     },
   });
 
@@ -72,9 +75,7 @@ export default function ReleaseDetailsPage() {
   async function handleDelete() {
     const confirmed = window.confirm(`Delete "${release.name}"? This cannot be undone.`);
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       await deleteRelease({
@@ -82,6 +83,8 @@ export default function ReleaseDetailsPage() {
           id: release.id,
         },
       });
+
+      navigate("/");
     } catch (error) {
       window.alert(`Failed to delete release: ${error.message}`);
     }
@@ -89,12 +92,23 @@ export default function ReleaseDetailsPage() {
 
   return (
     <section className="space-y-6">
-      <Link
-        to="/"
-        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-      >
-        ← All Releases
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          ← All Releases
+        </Link>
+
+        <button
+          type="button"
+          className="btn btn-error btn-outline btn-sm shrink-0"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          {deleting ? "Deleting..." : "Delete Release"}
+        </button>
+      </div>
 
       <div className="card border border-base-300 bg-base-100 shadow-sm">
         <div className="card-body gap-6">
@@ -105,9 +119,11 @@ export default function ReleaseDetailsPage() {
               <p className="mt-1 text-base-content/60">{formatReleaseDate(release.date)}</p>
             </div>
 
-            <span className={`badge badge-lg ${statusStyles[release.status]}`}>
-              {release.status}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`badge badge-lg ${statusStyles[release.status]}`}>
+                {release.status}
+              </span>
+            </div>
           </div>
 
           <div>
@@ -133,23 +149,10 @@ export default function ReleaseDetailsPage() {
           </p>
         </div>
 
-        <Checklist releaseId={release.id} steps={release.steps} />
+        <Checklist release={release} />
       </div>
 
       <AdditionalInfoForm key={release.id} release={release} />
-
-      <div className="flex justify-end">
-        <button className="btn btn-error btn-outline" onClick={handleDelete} disabled={deleting}>
-          {deleting ? (
-            <>
-              <span className="loading loading-spinner loading-sm" />
-              Deleting...
-            </>
-          ) : (
-            "Delete Release"
-          )}
-        </button>
-      </div>
     </section>
   );
 }
