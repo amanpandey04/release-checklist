@@ -66,7 +66,7 @@ export default function CreateReleasePage() {
           </label>
 
           <label className="form-control w-full">
-            <span className="mb-2 font-medium">Due date</span>
+            <span className="mb-2 font-medium">Date</span>
 
             <input
               type="datetime-local"

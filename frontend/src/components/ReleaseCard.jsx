@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { formatReleaseDate } from "../utils/formatReleaseDate";
 
 const statusStyles = {
   PLANNED: "badge-ghost",
@@ -19,7 +20,7 @@ export default function ReleaseCard({ release }) {
           <div>
             <h2 className="card-title">{release.name}</h2>
 
-            <p className="text-sm text-base-content/60">{release.date}</p>
+            <p className="text-sm text-base-content/60">{formatReleaseDate(release.date)}</p>
           </div>
 
           <span className={`badge ${statusStyles[release.status]}`}>{release.status}</span>

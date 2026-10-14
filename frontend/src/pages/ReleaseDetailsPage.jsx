@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router";
 
 import Checklist from "../components/Checklist";
 import AdditionalInfoForm from "../components/AdditionalInfoForm";
+import { formatReleaseDate } from "../utils/formatReleaseDate";
+
 import { DELETE_RELEASE } from "../graphql/mutations";
 import { GET_RELEASE } from "../graphql/queries";
 
@@ -100,9 +102,7 @@ export default function ReleaseDetailsPage() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">{release.name}</h1>
 
-              <p className="mt-1 text-base-content/60">
-                Due {new Date(release.date).toLocaleString()}
-              </p>
+              <p className="mt-1 text-base-content/60">{formatReleaseDate(release.date)}</p>
             </div>
 
             <span className={`badge badge-lg ${statusStyles[release.status]}`}>

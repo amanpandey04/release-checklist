@@ -18,6 +18,8 @@ export const resolvers = {
   },
 
   Release: {
+    date: (release) => new Date(release.date).toISOString(),
+
     status: (release) => {
       return calculateReleaseStatus(release.completedStepIds);
     },
