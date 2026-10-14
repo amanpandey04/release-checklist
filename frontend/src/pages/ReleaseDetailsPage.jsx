@@ -20,7 +20,6 @@ export default function ReleaseDetailsPage() {
     data,
     loading: releaseLoading,
     error: releaseError,
-    refetch,
   } = useQuery(GET_RELEASE, {
     variables: { id },
   });
@@ -118,10 +117,6 @@ export default function ReleaseDetailsPage() {
     }
   }
 
-  async function handleChecklistUpdated() {
-    await refetch();
-  }
-
   return (
     <section className="space-y-6">
       <Link
@@ -170,11 +165,7 @@ export default function ReleaseDetailsPage() {
           </p>
         </div>
 
-        <Checklist
-          releaseId={release.id}
-          steps={release.steps}
-          onUpdated={handleChecklistUpdated}
-        />
+        <Checklist releaseId={release.id} steps={release.steps} />
       </div>
 
       <form

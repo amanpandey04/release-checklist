@@ -2,11 +2,8 @@ import { useMutation } from "@apollo/client/react";
 
 import { SET_STEP_COMPLETION } from "../graphql/mutations";
 
-export default function Checklist({ releaseId, steps, onUpdated }) {
+export default function Checklist({ releaseId, steps }) {
   const [setStepCompletion, { loading }] = useMutation(SET_STEP_COMPLETION, {
-    onCompleted: (data) => {
-      onUpdated?.(data.setStepCompletion);
-    },
     onError: (error) => {
       console.error("Failed to update checklist step:", error);
     },
