@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import Checklist from "../components/Checklist";
-import { DELETE_RELEASE, UPDATE_RELEASE_ADDITIONAL_INFO } from "../graphql/mutations";
+import AdditionalInfoForm from "../components/AdditionalInfoForm";
+import { DELETE_RELEASE } from "../graphql/mutations";
 import { GET_RELEASE } from "../graphql/queries";
 
 const statusStyles = {
@@ -23,13 +23,6 @@ export default function ReleaseDetailsPage() {
   } = useQuery(GET_RELEASE, {
     variables: { id },
   });
-
-  const [saveMessage, setSaveMessage] = useState("");
-  const [saveError, setSaveError] = useState("");
-
-  const [updateAdditionalInfo, { loading: savingInfo }] = useMutation(
-    UPDATE_RELEASE_ADDITIONAL_INFO,
-  );
 
   const [deleteRelease, { loading: deleting }] = useMutation(DELETE_RELEASE, {
     onCompleted: () => {
@@ -73,31 +66,6 @@ export default function ReleaseDetailsPage() {
     release.totalSteps === 0
       ? 0
       : Math.round((release.completedStepsCount / release.totalSteps) * 100);
-
-  async function handleSaveAdditionalInfo(event) {
-    event.preventDefault();
-
-    setSaveMessage("");
-    setSaveError("");
-
-    const formData = new FormData(event.currentTarget);
-    const additionalInfo = String(formData.get("additionalInfo") ?? "");
-
-    try {
-      await updateAdditionalInfo({
-        variables: {
-          input: {
-            releaseId: release.id,
-            additionalInfo,
-          },
-        },
-      });
-
-      setSaveMessage("Information saved.");
-    } catch (error) {
-      setSaveError(error.message);
-    }
-  }
 
   async function handleDelete() {
     const confirmed = window.confirm(`Delete "${release.name}"? This cannot be undone.`);
@@ -168,47 +136,7 @@ export default function ReleaseDetailsPage() {
         <Checklist releaseId={release.id} steps={release.steps} />
       </div>
 
-      <form
-        key={release.id}
-        onSubmit={handleSaveAdditionalInfo}
-        className="card border border-base-300 bg-base-100 shadow-sm"
-      >
-        <div className="card-body">
-          <h2 className="card-title">Additional Information</h2>
-
-          <textarea
-            name="additionalInfo"
-            className="textarea textarea-bordered mt-2 min-h-32 w-full"
-            defaultValue={release.additionalInfo ?? ""}
-            placeholder="Add notes about this release..."
-          />
-
-          {saveMessage && (
-            <div className="alert alert-success mt-3">
-              <span>{saveMessage}</span>
-            </div>
-          )}
-
-          {saveError && (
-            <div className="alert alert-error mt-3">
-              <span>{saveError}</span>
-            </div>
-          )}
-
-          <div className="card-actions justify-end">
-            <button type="submit" className="btn btn-primary" disabled={savingInfo}>
-              {savingInfo ? (
-                <>
-                  <span className="loading loading-spinner loading-sm" />
-                  Saving...
-                </>
-              ) : (
-                "Save Information"
-              )}
-            </button>
-          </div>
-        </div>
-      </form>
+      <AdditionalInfoForm key={release.id} release={release} />
 
       <div className="flex justify-end">
         <button className="btn btn-error btn-outline" onClick={handleDelete} disabled={deleting}>
