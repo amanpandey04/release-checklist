@@ -28,9 +28,9 @@ export default function ReleaseDetailsPage() {
   });
 
   const [deleteRelease, { loading: deleting }] = useMutation(DELETE_RELEASE, {
-    update(cache, { data, variables }) {
+    update(cache, { data }) {
       if (data?.deleteRelease) {
-        removeReleaseFromList(cache, variables.id);
+        removeReleaseFromList(cache, id);
       }
     },
   });

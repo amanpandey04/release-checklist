@@ -12,35 +12,41 @@ export default function CreateReleasePage() {
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
-  const [formError, setFormError] = useState("");
 
-  const [createRelease, { loading }] = useMutation(CREATE_RELEASE, {
+  const [createRelease, { loading, error }] = useMutation(CREATE_RELEASE, {
     update(cache, { data }) {
       if (data?.createRelease) {
         addReleaseToList(cache, data.createRelease);
       }
     },
+
     onCompleted: (data) => {
       navigate(`/releases/${data.createRelease.id}`);
-    },
-    onError: (error) => {
-      setFormError(error.message);
     },
   });
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setFormError("");
 
-    await createRelease({
-      variables: {
-        input: {
-          name,
-          date,
-          additionalInfo,
+    const versionOrLabel = name.trim();
+
+    if (!versionOrLabel) {
+      return;
+    }
+
+    try {
+      await createRelease({
+        variables: {
+          input: {
+            name: `Version ${versionOrLabel}`,
+            date,
+            additionalInfo,
+          },
         },
-      },
-    });
+      });
+    } catch {
+      // Apollo exposes the error through the hook's error state.
+    }
   }
 
   return (
@@ -60,23 +66,31 @@ export default function CreateReleasePage() {
       <form onSubmit={handleSubmit} className="card border border-base-300 bg-base-100 shadow-sm">
         <div className="card-body gap-5">
           <label className="form-control w-full">
-            <span className="mb-2 font-medium">Release Name:</span>
+            <span className="mb-2 block font-medium">Release Name:</span>
 
-            <input
-              type="text"
-              className="input input-bordered w-full"
-              placeholder="Version 2.5.0"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
-            />
+            <div className="flex w-full">
+              <span className="flex shrink-0 items-center rounded-l-lg border border-r-0 border-base-300 bg-base-200 px-4 text-sm font-medium text-base-content/70">
+                Version
+              </span>
+
+              <input
+                type="text"
+                className="input input-bordered w-full rounded-l-none"
+                placeholder="2.4.0, beta, alpha"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+                pattern={".*\\S.*"}
+                title="Enter a version number or label."
+              />
+            </div>
           </label>
 
           <label className="form-control w-full">
-            <span className="mb-2 font-medium">Date:</span>
+            <span className="mb-2 block font-medium">Date:</span>
 
             <input
-              type="datetime-local"
+              type="date"
               className="input input-bordered w-full"
               value={date}
               onChange={(event) => setDate(event.target.value)}
@@ -85,7 +99,7 @@ export default function CreateReleasePage() {
           </label>
 
           <label className="form-control w-full">
-            <span className="mb-2 font-medium">Additional Information:</span>
+            <span className="mb-2 block font-medium">Additional Information:</span>
 
             <textarea
               className="textarea textarea-bordered min-h-36 w-full"
@@ -95,9 +109,9 @@ export default function CreateReleasePage() {
             />
           </label>
 
-          {formError && (
+          {error && (
             <div className="alert alert-error">
-              <span>{formError}</span>
+              <span>{error.message}</span>
             </div>
           )}
 
