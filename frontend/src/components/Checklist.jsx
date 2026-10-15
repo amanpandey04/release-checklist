@@ -89,7 +89,7 @@ export default function Checklist({ release }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {mutationError && (
         <div className="alert alert-error" role="alert">
           <span>{mutationError}</span>
@@ -99,7 +99,7 @@ export default function Checklist({ release }) {
       {steps.map((step) => (
         <label
           key={step.id}
-          className="flex cursor-pointer items-center gap-3 rounded-lg border border-base-300 bg-base-100 p-4 transition-colors hover:bg-base-200"
+          className="flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-base-300 bg-base-100 p-3 transition-[border-color,box-shadow] duration-200 hover:border-primary hover:shadow-md sm:p-4"
         >
           <input
             type="checkbox"
@@ -109,7 +109,13 @@ export default function Checklist({ release }) {
             disabled={pendingStepIds.has(step.id)}
           />
 
-          <span className={step.completed ? "line-through opacity-60" : ""}>{step.label}</span>
+          <span
+            className={`min-w-0 text-md leading-snug ${
+              step.completed ? "line-through opacity-60" : ""
+            }`}
+          >
+            {step.label}
+          </span>
         </label>
       ))}
     </div>

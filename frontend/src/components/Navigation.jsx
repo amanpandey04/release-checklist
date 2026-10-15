@@ -6,7 +6,7 @@ export default function Navigation() {
       <div className="navbar mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex-1">
           <Link to="/" className="text-lg font-bold tracking-tight">
-            Release Checklist
+            ShipCheck
           </Link>
         </div>
 

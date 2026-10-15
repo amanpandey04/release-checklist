@@ -48,7 +48,7 @@ export default function ReleaseCard({ release }) {
       : Math.round((release.completedStepsCount / release.totalSteps) * 100);
 
   return (
-    <article className="card border border-base-300 bg-base-100 shadow-sm transition duration-200 hover:border-primary/30 hover:shadow-md">
+    <article className="card border border-base-300 bg-base-100 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out hover:border-primary hover:shadow-xl">
       <div className="card-body gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -77,14 +77,14 @@ export default function ReleaseCard({ release }) {
         <div className="card-actions justify-end">
           <button
             type="button"
-            className="btn btn-error btn-outline btn-sm"
+            className="btn btn-error btn-soft btn-sm"
             onClick={handleDelete}
             disabled={deleting}
           >
             {deleting ? "Deleting..." : "Delete"}
           </button>
 
-          <Link to={`/releases/${release.id}`} className="btn btn-outline btn-sm">
+          <Link to={`/releases/${release.id}`} className="btn btn-primary btn-soft btn-sm">
             View Release
           </Link>
         </div>

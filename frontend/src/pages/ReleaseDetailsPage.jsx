@@ -102,7 +102,7 @@ export default function ReleaseDetailsPage() {
 
         <button
           type="button"
-          className="btn btn-error btn-outline btn-sm shrink-0"
+          className="btn btn-error btn-soft btn-sm shrink-0"
           onClick={handleDelete}
           disabled={deleting}
         >

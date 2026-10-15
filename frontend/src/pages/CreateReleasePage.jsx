@@ -40,7 +40,7 @@ export default function CreateReleasePage() {
           input: {
             name: `Version ${versionOrLabel}`,
             date,
-            additionalInfo,
+            additionalInfo: additionalInfo.trim() || null,
           },
         },
       });
